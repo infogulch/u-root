@@ -34,12 +34,26 @@ import (
 	"sort"
 	"text/tabwriter"
 
+	"github.com/u-root/u-root/pkg"
 	"github.com/u-root/u-root/pkg/uroot/unixflag"
 )
 
+func Run(ctx pkg.ExecContext, args []string) int {
+	if wd, err := ctx.Getwd(); err != nil {
+		fmt.Fprintln(ctx.Stderr(), err)
+		return 1
+	} else if err = Command(ctx.Stdout(), wd, args); err != nil {
+		fmt.Fprintln(ctx.Stderr(), err)
+		return 1
+	}
+	return 0
+}
+
+var _ pkg.Run = Run
+
 // Command executes ls with provided args and writes output to o. args are as if
 // from os.Args where args[0] is the command name.
-func Command(o io.Writer, args []string) error {
+func Command(o io.Writer, dir string, args []string) error {
 	var c cmd
 	f := flag.NewFlagSet(args[0], flag.ExitOnError)
 	f.BoolVar(&c.all, "a", false, "show hidden files")
@@ -51,12 +65,14 @@ func Command(o io.Writer, args []string) error {
 	f.BoolVar(&c.classify, "F", false, "append indicator (, one of */=>@|) to entries")
 	f.BoolVar(&c.size, "S", false, "sort by size")
 	c.w = o
+	c.dir = dir
 	f.Parse(unixflag.ArgsToGoArgs(args[1:]))
 	return c.list(f.Args())
 }
 
 type cmd struct {
 	w         io.Writer
+	dir       string
 	all       bool
 	human     bool
 	directory bool
@@ -87,6 +103,9 @@ func (c cmd) list(names []string) error {
 	// Is a name a directory? If so, list it in its own section.
 	prefix := len(names) > 1
 	for _, d := range names {
+		if !filepath.IsAbs(d) {
+			d = filepath.Join(c.dir, d)
+		}
 		if err := c.listName(s, d, prefix); err != nil {
 			return fmt.Errorf("error while listing %q: %w", d, err)
 		}
