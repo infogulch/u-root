@@ -141,7 +141,7 @@ func TestRun(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := Command(io.Discard, tt.args); err != nil {
+			if err := Command(io.Discard, ".", tt.args); err != nil {
 				if !errors.Is(err, tt.err) {
 					t.Errorf("list() = '%v', want: '%v'", err, tt.err)
 				}

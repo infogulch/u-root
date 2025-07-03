@@ -25,14 +25,13 @@
 package main
 
 import (
-	"log"
+	"context"
 	"os"
 
+	"github.com/u-root/u-root/pkg"
 	"github.com/u-root/u-root/pkg/ls"
 )
 
 func main() {
-	if err := ls.Command(os.Stdout, os.Args); err != nil {
-		log.Fatal(err)
-	}
+	os.Exit(ls.Run(pkg.OsContext(context.Background()), os.Args))
 }
